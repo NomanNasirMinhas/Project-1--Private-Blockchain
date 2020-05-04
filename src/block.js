@@ -1,57 +1,61 @@
-/*
-This class defines chararcteristics of a block
- */
-
-const SHA256 = require("crypto-js/sha256");
-const hex2ascii = require("hex2ascii");
+const SHA256 = require('crypto-js/sha256');
+const hex2ascii = require('hex2ascii');
 
 class Block {
-  // Constructor - argument data will be the object containing the transaction data
-  constructor(data) {
-    this.hash = null; 
-    this.height = 0; 
-    this.body = Buffer(JSON.stringify(data)).toString("hex"); 
-    this.time = 0; 
-    this.previousBlockHash = null; 
-  }
 
-  /*
-The validate() method will validate if the block has been tampered or not.
-Been tampered means that someone from outside the application tried to change values in the block data as a consequence the hash of the block should be different.
-Steps:
-- Return a new promise to allow the method be called asynchronous.
-- Create an auxiliary variable and store the current hash of the block in it (this represent the block object)
-- Recalculate the hash of the entire block (Use SHA256 from crypto-js library)
-- Compare if the auxiliary hash value is different from the calculated one.
-- Resolve true or false depending if it is valid or not.
-   */
+	constructor(data){
+		this.hash = null;                                           // Hash of the block
+		this.height = 0;                                            // Block Height (consecutive number of each block)
+		this.body = Buffer(JSON.stringify(data)).toString('hex');   // Will contain the transactions stored in the block, by default it will encode the data
+		this.time = 0;                                              // Timestamp for the Block creation
+		this.previousBlockHash = null;                              // Reference to the previous Block Hash
+    }
+    
+    
+    validate() {
+        let self = this;
+        return new Promise((resolve, reject) => {
+            // Save in auxiliary variable the current block hash
+            let hash = self.hash;
+            self.hash = null;
+            // Recalculate the hash of the Block
+            let calculated_hash = SHA256(JSON.stringify(self)).toString();
+            self.hash = hash;
+            // Comparing if the hashes changed
+            if (hash == calculated_hash){
+                resolve(true);
+            }
+           else{
+                resolve(false);
+           }
 
-   validate() {
-    let self = this;
-    return new Promise((resolve) => {
-      curHash = this.hash;
-      const recalculatedHash = SHA256(JSON.stringify(this)).toString();
-      resolve(curHash === recalculatedHash);
+            // Returning the Block is not valid
+            
+            // Returning the Block is valid
+
+        });
+    }
+
+   
+    getBData() {
+        let self = this;
+
+        return new Promise((resolve, reject) => {
+        // Getting the encoded data saved in the Block
+        let encoded_data = self.body;
+        // Decoding the data to retrieve the JSON representation of the object
+        let decoded_data = hex2ascii(encoded_data);
+        // Parse the data to an object to be retrieve.
+        let data_object = JSON.parse(decoded_data);
+
+        if (data_object.data == "Genesis Block"){
+            resolve(decoded_data);
+        }
+        else{
+            console.log("Error in getBData()");
+        }
+        // Resolve with the data if the object isn't the Genesis block
     });
-  }
-
-
-  getBData() {
-/*
-Auxiliary Method to return the data stored in the body of the block but decoded.
-Steps:
-- Use hex2ascii module to decode the data
-- Because data is a javascript object use JSON.parse(string) to get the Javascript Object
-- Resolve with the data and make sure that you don't need to return the data for the genesis block or Reject with an error.
-*/
-    return new Promise((resolve, reject) => {
-      if (!this.previousBlockHash) {
-        reject(null);
-      }
-      const decodedData = JSON.parse(hex2ascii(this.body));
-      resolve(decodedData);
-    });
-  }
+    }
 }
-
-module.exports.Block = Block; 
+module.exports.Block = Block;  
